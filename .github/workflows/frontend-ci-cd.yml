@@ -32,7 +32,7 @@ jobs:
       - name: Terraform Init
         id: init
         run: terraform init
-        working-directory: ./infrastructure
+        working-directory: infrastructure
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -63,7 +63,7 @@ jobs:
           echo "S3_BUCKET_NAME=$(terraform output -raw frontend_s3_bucket_name)" >> $GITHUB_OUTPUT
           echo "CLOUDFRONT_DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
           echo "ALB_DNS_NAME=$(terraform output -raw alb_dns_name)" >> $GITHUB_OUTPUT
-        working-directory: ./infrastructure
+        working-directory: infrastructure
 
       - name: Deploy to S3
         run: |
