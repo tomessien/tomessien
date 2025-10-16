@@ -15,12 +15,20 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: List files for debugging
-        run: ls -R
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.x
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        working-directory: infrastructure
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -29,8 +37,31 @@ jobs:
 
       - name: Get Flutter dependencies
         run: flutter pub get
-        working-directory: frontend/thesis_rosca_app
+        working-directory: ../frontend/thesis_rosca_app
 
       - name: Build Flutter web app
         run: flutter build web --release --web-renderer html --base-href /
-        working-directory: frontend/thesis_rosca_app
+        working-directory: ../frontend/thesis_rosca_app
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get Terraform Outputs
+        id: terraform_outputs
+        run: |
+          echo "frontend_s3_bucket_name=$(terraform output -raw frontend_s3_bucket_name)" >> $GITHUB_OUTPUT
+          echo "cloudfront_distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
+          echo "alb_dns_name=$(terraform output -raw alb_dns_name)" >> $GITHUB_OUTPUT
+        working-directory: infrastructure
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync ../frontend/thesis_rosca_app/build/web/ s3://${{ steps.terraform_outputs.outputs.frontend_s3_bucket_name }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ steps.terraform_outputs.outputs.cloudfront_distribution_id }} --paths "/*"
