@@ -4,13 +4,11 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'backend/**'
+
   pull_request:
     branches:
       - main
-    paths:
-      - 'backend/**'
+
 
 env:
   AWS_REGION: us-east-1 # Replace with your desired AWS region
