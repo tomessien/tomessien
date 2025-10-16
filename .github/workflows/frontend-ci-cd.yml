@@ -30,3 +30,7 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
         working-directory: frontend/thesis_rosca_app
+
+      - name: Build Flutter web app
+        run: flutter build web --release --web-renderer html --base-href /
+        working-directory: frontend/thesis_rosca_app
