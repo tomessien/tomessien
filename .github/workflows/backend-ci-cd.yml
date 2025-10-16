@@ -44,3 +44,23 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f backend/Dockerfile .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.x
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        working-directory: infrastructure
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve
+        working-directory: infrastructure
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service --cluster thesis-rosca-app-cluster --service thesis-rosca-app-backend-service --force-new-deployment
+
