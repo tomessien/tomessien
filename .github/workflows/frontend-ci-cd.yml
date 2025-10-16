@@ -19,6 +19,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Print current working directory
+        run: pwd
+
+      - name: List files for debugging
+        run: ls -R
+
+      - name: Check infrastructure directory existence
+        run: |
+          if [ -d "infrastructure" ]; then
+            echo "Infrastructure directory exists."
+          else
+            echo "Infrastructure directory DOES NOT exist."
+            exit 1
+          fi
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
