@@ -14,6 +14,9 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure
 
     steps:
       - name: Checkout code
@@ -26,9 +29,7 @@ jobs:
 
       - name: Terraform Init
         id: init
-        run: |
-          cd infrastructure
-          terraform init
+        run: terraform init
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -37,11 +38,11 @@ jobs:
 
       - name: Get Flutter dependencies
         run: flutter pub get
-        working-directory: frontend/thesis_rosca_app
+        working-directory: ../frontend/thesis_rosca_app
 
       - name: Build Flutter web app
         run: flutter build web --release --web-renderer html --base-href /
-        working-directory: frontend/thesis_rosca_app
+        working-directory: ../frontend/thesis_rosca_app
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -53,15 +54,13 @@ jobs:
       - name: Get Terraform Outputs
         id: terraform_outputs
         run: |
-          cd infrastructure
           echo "frontend_s3_bucket_name=$(terraform output -raw frontend_s3_bucket_name)" >> $GITHUB_OUTPUT
           echo "cloudfront_distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
           echo "alb_dns_name=$(terraform output -raw alb_dns_name)" >> $GITHUB_OUTPUT
 
       - name: Deploy to S3
         run: |
-          aws s3 sync build/web/ s3://${{ steps.terraform_outputs.outputs.frontend_s3_bucket_name }} --delete
-        working-directory: frontend/thesis_rosca_app
+          aws s3 sync ../frontend/thesis_rosca_app/build/web/ s3://${{ steps.terraform_outputs.outputs.frontend_s3_bucket_name }} --delete
 
       - name: Invalidate CloudFront cache
         run: |
