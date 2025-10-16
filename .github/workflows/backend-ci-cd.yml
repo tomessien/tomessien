@@ -16,28 +16,14 @@ env:
   AWS_REGION: us-east-1 # Replace with your desired AWS region
   ECR_REPOSITORY: thesis-rosca-backend
   ECS_TASK_FAMILY: thesis-rosca-app-backend-task
-  ECS_CLUSTER: thesis-rosca-app-cluster
-  ECS_TASK_DEFINITION_PATH: .aws/task-definition.json
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: infrastructure
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.x
-
-      - name: Terraform Init
-        id: init
-        run: terraform init
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -45,19 +31,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-
-      - name: Terraform Apply
-        id: apply
-        run: terraform apply -auto-approve
-        env:
-          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
-          TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
-
-      - name: Get Terraform Outputs
-        id: terraform_outputs
-        run: |
-          echo "ECS_TASK_EXECUTION_ROLE_ARN=$(terraform output -raw ecs_task_execution_role_arn)" >> $GITHUB_OUTPUT
-          echo "ECS_TASK_ROLE_ARN=$(terraform output -raw ecs_task_role_arn)" >> $GITHUB_OUTPUT
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -71,22 +44,3 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f backend/Dockerfile .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-      - name: Render Amazon ECS task definition
-        id: render-task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: /home/ubuntu/thesis-rosca-app/backend/.aws/task-definition.json
-          container-name: thesis-rosca-app-backend
-          image: ${{ steps.build-image.outputs.image }}
-          execution-role-arn: ${{ steps.terraform_outputs.outputs.ECS_TASK_EXECUTION_ROLE_ARN }}
-          task-role-arn: ${{ steps.terraform_outputs.outputs.ECS_TASK_ROLE_ARN }}
-
-      - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
-          service: thesis-rosca-app-backend-service
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
-
