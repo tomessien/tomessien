@@ -20,9 +20,7 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: infrastructure
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -36,7 +34,7 @@ jobs:
 
       - name: Terraform Init
         id: init
-        run: terraform init
+        run: cd infrastructure && terraform init
 
 
       - name: Setup Flutter
@@ -65,8 +63,9 @@ jobs:
       - name: Get Terraform Outputs
         id: terraform_outputs
         run: |
-          echo "frontend_s3_bucket_name=$(terraform output -raw frontend_s3_bucket_name)" >> $GITHUB_OUTPUT
-          echo "cloudfront_distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
+          cd infrastructure && \
+          echo "frontend_s3_bucket_name=$(terraform output -raw frontend_s3_bucket_name)" >> $GITHUB_OUTPUT && \
+          echo "cloudfront_distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT && \
           echo "alb_dns_name=$(terraform output -raw alb_dns_name)" >> $GITHUB_OUTPUT
 
 
