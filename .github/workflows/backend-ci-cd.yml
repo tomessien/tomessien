@@ -22,6 +22,9 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -34,7 +37,7 @@ jobs:
 
       - name: Terraform Init
         id: init
-        run: terraform -chdir=infrastructure init
+        run: terraform init
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -45,7 +48,7 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        run: terraform -chdir=infrastructure apply -auto-approve
+        run: terraform apply -auto-approve
         env:
           TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
           TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
@@ -53,8 +56,8 @@ jobs:
       - name: Get Terraform Outputs
         id: terraform_outputs
         run: |
-          echo "ECS_TASK_EXECUTION_ROLE_ARN=$(terraform -chdir=infrastructure output -raw ecs_task_execution_role_arn)" >> $GITHUB_OUTPUT
-          echo "ECS_TASK_ROLE_ARN=$(terraform -chdir=infrastructure output -raw ecs_task_role_arn)" >> $GITHUB_OUTPUT
+          echo "ECS_TASK_EXECUTION_ROLE_ARN=$(terraform output -raw ecs_task_execution_role_arn)" >> $GITHUB_OUTPUT
+          echo "ECS_TASK_ROLE_ARN=$(terraform output -raw ecs_task_role_arn)" >> $GITHUB_OUTPUT
 
       - name: Login to Amazon ECR
         id: login-ecr
