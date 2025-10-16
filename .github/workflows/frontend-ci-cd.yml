@@ -33,7 +33,7 @@ jobs:
 
       - name: Terraform Init
         id: init
-        run: terraform init
+        run: cd infrastructure && terraform init
 
 
       - name: Setup Flutter
@@ -62,8 +62,9 @@ jobs:
       - name: Get Terraform Outputs
         id: terraform_outputs
         run: |
-          echo "S3_BUCKET_NAME=$(terraform output -raw frontend_s3_bucket_name)" >> $GITHUB_OUTPUT
-          echo "CLOUDFRONT_DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
+          cd infrastructure && \
+          echo "S3_BUCKET_NAME=$(terraform output -raw frontend_s3_bucket_name)" >> $GITHUB_OUTPUT && \
+          echo "CLOUDFRONT_DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT && \
           echo "ALB_DNS_NAME=$(terraform output -raw alb_dns_name)" >> $GITHUB_OUTPUT
 
 
